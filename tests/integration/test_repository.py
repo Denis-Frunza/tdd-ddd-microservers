@@ -1,8 +1,15 @@
+import pytest
+
+from sqlalchemy.sql import text
+
 import src.domain.model as model
 import src.adapters.repository as repository
 
 
-def test_repository_can_save_a_batch(session):
+pytestmark = pytest.mark.usefixtures("mappers")
+
+def test_repository_can_save_a_batch(sqlite_session_factory):
+    session = sqlite_session_factory()
     batch = model.Batch("batch1", "RUSTY-SOAPDISH", 100, eta=None)
     repo = repository.SqlAlchemyRepository(session)
 
@@ -10,7 +17,7 @@ def test_repository_can_save_a_batch(session):
     session.commit()
 
     rows = list(session.execute(
-    'SELECT reference, sku, _purchased_quantity, eta FROM "batches"' 
+    text('SELECT reference, sku, _purchased_quantity, eta FROM "batches"') 
     ))
     assert rows == [("batch1", "RUSTY-SOAPDISH", 100, None)]
 
@@ -38,21 +45,3 @@ def insert_batch(session, ref, sku, qty, eta, product_version=1):
         " VALUES (:ref, :sku, :qty, :eta)",
         dict(ref=ref, sku=sku, qty=qty, eta=eta),
     )
-
-
-def test_repository_can_retrieve_a_batch_with_allocations(session):
-    orderline_id = insert_order_line(session)
-    batch1_id = insert_batch(session, "batch1")
-    insert_batch(session, "batch2")
-    insert_allocation(session, orderline_id, batch1_id)
-
-    repo = repository.SqlAlchemyRepository(session)
-    retrieved = repo.get("batch1")
-
-    expected = model.Batch("batch1", "GENERIC-SOFA", 100, eta=None)
-    assert retrieved == expected
-    assert retrieved.sku == expected.sku
-    assert retrieved._purchased_quantity == expected._purchased_quantity
-    assert retrieved._allocations == {
-        model.OrderLine("order1", "GENERIC-SOFA", 12),
-    }

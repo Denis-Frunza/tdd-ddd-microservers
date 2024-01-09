@@ -3,6 +3,7 @@ from datetime import date
 from dataclasses import dataclass
 
 from src.domain.exceptions import OutOfStock
+from src.domain import events
 
 
 @dataclass(frozen=True)
@@ -59,13 +60,17 @@ class Batch:
     def __hash__(self):
         return hash(self.reference)
 
+class Product:
+    def __init__(self, sku: str, batches: t.List[Batch]):
+        self.sku = sku
+        self.batches = batches
+        self.events = []
 
-def allocate(line: OrderLine, batches: t.List[Batch]) -> str:
-    try:
-        batch = next(
-        b for b in sorted(batches) if b.can_allocate(line)
-        )
-        batch.allocate(line)
-        return batch.reference
-    except StopIteration:
-        raise OutOfStock(f'{line.sku} does not exist')
+    def allocate(self, line: OrderLine) -> str:
+        try:
+            batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
+            batch.allocate(line)
+            return batch.reference
+        except StopIteration:
+            self.events.append(events.OutOfStock(line.sku))
+            return None

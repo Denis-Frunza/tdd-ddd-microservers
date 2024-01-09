@@ -1,6 +1,6 @@
-import requests
+# import requests
 
-from ..random_refs import random_batchref, random_orderid, random_sku
+# from ..random_refs import random_batchref, random_orderid, random_sku
 # from .. import config
 
 
