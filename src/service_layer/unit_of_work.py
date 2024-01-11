@@ -19,20 +19,29 @@ DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(
 class UnitOfWork(ABC):
     products: repository.AbstractRepository
 
-    @abstractmethod
-    def rollback(self):
-        ...
-    
-    @abstractmethod
-    def  commit(self):
-        ...
-
-
     def __enter__(self) -> UnitOfWork:
         return self
 
     def __exit__(self, *args):
         self.rollback()
+
+    def commit(self):
+        self._commit()
+        self.publish_events()
+
+    def publish_events(self):
+        for product in self.products.seen:
+            while product.events:
+                event = product.events.pop(0)
+                message_bus.handle(event)
+
+    @abstractmethod
+    def _commit(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def rollback(self):
+        raise NotImplementedError
 
 
 class SqlAlchemyUnitOfWork(UnitOfWork):
@@ -40,14 +49,15 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         self.session_factory = session_factory
 
     def __enter__(self):
-        self.session = self.session_factory()
-        self.batches = repository.SqlAlchemyRepository(self.session)
+        self.session = self.session_factory()  # type: Session
+        self.products = repository.SqlAlchemyRepository(self.session)
+        return super().__enter__()
 
     def __exit__(self, *args):
         super().__exit__(*args)
         self.session.close()
 
-    def commit(self):
+    def _commit(self):
         self.session.commit()
 
     def rollback(self):

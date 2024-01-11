@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Optional
-from datetime import date
 
-from src.domain.exceptions import InvalidSku
+from datetime import date
+from typing import Optional
+
 from src.domain import model
+from src.domain.exceptions import InvalidSku
 from src.service_layer.unit_of_work import UnitOfWork
 
 
@@ -12,7 +13,9 @@ def is_valid_sku(sku, batches):
 
 
 def allocate(
-    orderid: str, sku: str, qty: int,
+    orderid: str,
+    sku: str,
+    qty: int,
     uow: UnitOfWork,
 ) -> str:
     line = model.OrderLine(orderid, sku, qty)
@@ -26,7 +29,10 @@ def allocate(
 
 
 def add_batch(
-    ref: str, sku: str, qty: int, eta: Optional[date],
+    ref: str,
+    sku: str,
+    qty: int,
+    eta: Optional[date],
     uow: UnitOfWork,
 ):
     with uow:

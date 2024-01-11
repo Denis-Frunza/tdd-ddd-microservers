@@ -1,8 +1,7 @@
 import typing as t
-from datetime import date
 from dataclasses import dataclass
+from datetime import date
 
-from src.domain.exceptions import OutOfStock
 from src.domain import events
 
 
@@ -14,16 +13,14 @@ class OrderLine:
 
 
 class Batch:
-    def __init__(
-        self, ref:  str,  sku: str, qty: int, eta: t.Optional[date]   
-    ):
+    def __init__(self, ref: str, sku: str, qty: int, eta: t.Optional[date]):
         self.reference = ref
         self.sku = sku
         self.eta = eta
         self._purchased_quantity = qty
         self._allocations: t.Set[OrderLine] = set()
-    
-    def allocate(self,  line: OrderLine):
+
+    def allocate(self, line: OrderLine):
         if self.can_allocate(line):
             self._allocations.add(line)
 
@@ -60,6 +57,7 @@ class Batch:
     def __hash__(self):
         return hash(self.reference)
 
+
 class Product:
     def __init__(self, sku: str, batches: t.List[Batch]):
         self.sku = sku
@@ -73,4 +71,3 @@ class Product:
             return batch.reference
         except StopIteration:
             self.events.append(events.OutOfStock(line.sku))
-            return None

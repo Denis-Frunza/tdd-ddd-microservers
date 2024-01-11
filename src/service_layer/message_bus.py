@@ -1,6 +1,8 @@
-from typing import List, Dict, Callable, Type
+from typing import Callable, Dict, List, Type
+
 from src.adapters import email
 from src.domain import events
+
 
 def handle(event: events.Event):
     for handler in HANDLERS[type(event)]:
@@ -9,8 +11,8 @@ def handle(event: events.Event):
 
 def send_out_of_stock_notification(event: events.OutOfStock):
     email.send_mail(
-    'stock@made.com',
-    f'out of stock {event.sku} ',
+        "stock@made.com",
+        f"Out of stock {event.sku} ",
     )
 
 

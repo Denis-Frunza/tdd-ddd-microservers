@@ -1,35 +1,47 @@
 import abc
-from typing import Set
 
 import src.domain.model as model
 
 
 class AbstractRepository(abc.ABC):
+    def __init__(self):
+        self.seen = set()
 
-    @abc.abstractmethod 
-    def add(self, batch: model.Batch):
+    def add(self, product: model.Product):
+        self._add(product)
+        self.seen.add(product)
+
+    def get(self, sku: str) -> model.Product:
+        product = self._get(sku)
+
+        if product:
+            self.seen.add(product)
+
+        return product
+
+    @abc.abstractmethod
+    def _add(self, batch: model.Product):
         ...
 
     @abc.abstractmethod
-    def get(self, reference) -> model.Batch:
+    def _get(self, reference) -> model.Product:
         ...
 
 
 class SqlAlchemyRepository(AbstractRepository):
     def __init__(self, session):
+        super().__init__()
         self.session = session
 
-    def add(self, batch):
-        self.session.add(batch)
+    def _add(self, product):
+        self.session.add(product)
 
-    def get(self, reference):
-        return self.session.query(
-            model.Batch).filter_by(reference=reference).one()
+    def _get(self, sku):
+        return self.session.query(model.Product).filter_by(sku=sku).first()
 
-    def list(self):
-        return self.session.query(model.Batch).all()
 
-class FakeSession():
+class FakeSession:
     committed = False
+
     def commit(self):
         self.committed = True
