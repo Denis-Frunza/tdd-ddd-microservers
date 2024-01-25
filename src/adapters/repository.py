@@ -19,12 +19,22 @@ class AbstractRepository(abc.ABC):
 
         return product
 
+    def get_by_batchref(self, batchref) -> model.Product:
+        product = self._get_by_batchref(batchref)
+        if product:
+            self.seen.add(product)
+        return product
+
     @abc.abstractmethod
     def _add(self, batch: model.Product):
         ...
 
     @abc.abstractmethod
     def _get(self, reference) -> model.Product:
+        ...
+
+    @abc.abstractmethod
+    def _get_by_batchref(self, batchref) -> model.Product:
         ...
 
 

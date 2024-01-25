@@ -1,2 +1,2 @@
 def send_mail(*args):
-    print('SENDING EMAIL:', *args)
+    print("SENDING EMAIL:", *args)
