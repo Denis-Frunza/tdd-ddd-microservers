@@ -2,8 +2,7 @@ import typing as t
 from dataclasses import dataclass
 from datetime import date
 
-from src.domain import events
-
+from src.domain import commands, events
 
 @dataclass(frozen=True)
 class OrderLine:
@@ -80,6 +79,4 @@ class Product:
         batch._purchased_quantity = qty
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
-            self.events.append(
-                events.AllocationRequired(line.orderid, line.sku, line.qty)
-            )
+            self.events.append(commands.Allocate(line.orderid, line.sku, line.qty))
