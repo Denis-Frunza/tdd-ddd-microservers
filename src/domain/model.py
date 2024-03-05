@@ -70,9 +70,18 @@ class Product:
         try:
             batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
             batch.allocate(line)
+            self.events.append(
+                events.Allocated(
+                    orderid=line.orderid,
+                    sku=line.sku,
+                    qty=line.qty,
+                    batchref=batch.reference,
+                )
+            )
             return batch.reference
         except StopIteration:
             self.events.append(events.OutOfStock(line.sku))
+            return
 
     def change_batch_quantity(self, ref: str, qty: int):
         batch = next(b for b in self.batches if b.reference == ref)
