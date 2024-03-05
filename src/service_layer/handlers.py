@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from datetime import date
-from typing import Optional
 
 from src.adapters.email import send_mail
-from src.domain import model
-from src.domain import events
+from src.adapters import redis_eventpublisher
+from src.domain import events, commands, model
 from src.domain.exceptions import InvalidSku
 from src.service_layer.unit_of_work import UnitOfWork
 
@@ -15,7 +13,7 @@ def is_valid_sku(sku, batches):
 
 
 def allocate(
-    event: events.AllocationRequired,
+    event: commands.Allocate,
     uow: UnitOfWork,
 ) -> str:
     line = model.OrderLine(event.orderid, event.sku, event.qty)
@@ -29,7 +27,7 @@ def allocate(
 
 
 def add_batch(
-    event: events.BatchCreated,
+    event: commands.CreateBatch,
     uow: UnitOfWork,
 ):
     with uow:
@@ -41,13 +39,20 @@ def add_batch(
         uow.commit()
 
 def change_batch_quantity(
-    event: events.BatchQuantityChanged,
+    cmd: commands.ChangeBatchQuantity,
     uow: UnitOfWork,
 ):
     with uow:
-        product = uow.products.get_by_batchref(batchref=event.ref)
-        product.change_batch_quantity(ref=event.ref, qty=event.qty)
+        product = uow.products.get_by_batchref(batchref=cmd.ref)
+        product.change_batch_quantity(ref=cmd.ref, qty=cmd.qty)
         uow.commit()
+
+
+def publish_allocated_event(
+    event: events.Allocated,
+    uow: UnitOfWork,
+):
+    redis_eventpublisher.publish("line_allocated", event)
 
 
 def send_out_of_stock_notification(event: events.OutOfStock, uow: UnitOfWork):
